@@ -10,11 +10,16 @@ interface AppState {
   answers: Answers;
   current: number;
   theme: Theme;
+  /** false = ausdata-style landing page, true = intake questionnaire */
+  entered: boolean;
   setField: (id: string, value: AnswerValue) => void;
   toggleCheck: (id: string, v: string) => void;
   goto: (i: number) => void;
   next: () => void;
   back: () => void;
+  /** enter the questionnaire, optionally jumping to a section */
+  enter: (i?: number) => void;
+  exitHome: () => void;
   setTheme: (t: Theme) => void;
   toggleTheme: () => void;
   reset: () => void;
@@ -27,6 +32,7 @@ export const useStore = create<AppState>()(
       answers: {},
       current: 0,
       theme: "dark",
+      entered: false,
       setField: (id, value) =>
         set((st) => ({ answers: { ...st.answers, [id]: value } })),
       toggleCheck: (id, v) =>
@@ -42,6 +48,12 @@ export const useStore = create<AppState>()(
       goto: (i) => set({ current: Math.max(0, Math.min(i, LAST)) }),
       next: () => set((st) => ({ current: Math.min(st.current + 1, LAST) })),
       back: () => set((st) => ({ current: Math.max(st.current - 1, 0) })),
+      enter: (i) =>
+        set((st) => ({
+          entered: true,
+          current: i == null ? st.current : Math.max(0, Math.min(i, LAST)),
+        })),
+      exitHome: () => set({ entered: false }),
       setTheme: (t) => set({ theme: t }),
       toggleTheme: () =>
         set((st) => ({ theme: st.theme === "dark" ? "light" : "dark" })),
@@ -54,6 +66,7 @@ export const useStore = create<AppState>()(
         answers: st.answers,
         current: st.current,
         theme: st.theme,
+        entered: st.entered,
       }),
     },
   ),

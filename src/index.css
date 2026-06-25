@@ -3,63 +3,79 @@
 @tailwind utilities;
 
 @layer base {
-  /* ---- Light ---- */
+  /* ============================================================
+     ausdata.ai-inspired editorial palette
+     dark = warm near-black + violet / amber / ivory constellation
+     ============================================================ */
+
+  /* ---- Light (warm paper) ---- */
   :root {
-    --background: 220 24% 97%;
-    --foreground: 220 35% 8%;
+    --background: 40 30% 97%;
+    --foreground: 240 18% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 220 35% 8%;
+    --card-foreground: 240 18% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 35% 8%;
-    --primary: 220 38% 11%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 18% 94%;
-    --secondary-foreground: 220 25% 14%;
-    --muted: 220 18% 94%;
-    --muted-foreground: 218 13% 40%;
-    --accent: 220 18% 90%;
-    --accent-foreground: 220 25% 14%;
-    --destructive: 358 68% 50%;
+    --popover-foreground: 240 18% 11%;
+    --primary: 245 35% 14%;
+    --primary-foreground: 40 30% 98%;
+    --secondary: 245 22% 95%;
+    --secondary-foreground: 245 25% 16%;
+    --muted: 245 22% 95%;
+    --muted-foreground: 240 8% 42%;
+    --accent: 250 35% 92%;
+    --accent-foreground: 245 25% 16%;
+    --destructive: 2 72% 50%;
     --destructive-foreground: 0 0% 100%;
-    --success: 145 60% 34%;
+    --success: 150 56% 33%;
     --success-foreground: 0 0% 100%;
-    --warning: 35 88% 42%;
+    --warning: 32 92% 44%;
     --warning-foreground: 0 0% 100%;
-    --border: 220 16% 86%;
-    --input: 220 16% 84%;
-    --brand: 224 82% 56%;
+    --border: 245 18% 88%;
+    --input: 245 18% 84%;
+    --brand: 258 72% 56%;
     --brand-foreground: 0 0% 100%;
-    --ring: 224 82% 56%;
+    --ring: 258 72% 56%;
+
+    /* constellation accents */
+    --c-violet: 258 88% 62%;
+    --c-amber: 32 95% 52%;
+    --c-star: 245 30% 30%;
+
     --radius: 0.6rem;
   }
 
-  /* ---- Dark (default) — tuned for contrast & legibility ---- */
+  /* ---- Dark (default) — warm near-black, ausdata editorial ---- */
   .dark {
-    --background: 222 18% 6%;
-    --foreground: 210 20% 98%;
-    --card: 220 15% 11%;
-    --card-foreground: 210 20% 98%;
-    --popover: 220 15% 12%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 210 20% 98%;
-    --primary-foreground: 220 20% 8%;
-    --secondary: 220 13% 17%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 220 13% 17%;
-    --muted-foreground: 216 16% 74%;
-    --accent: 220 12% 23%;
-    --accent-foreground: 210 20% 99%;
-    --destructive: 358 78% 64%;
+    --background: 240 9% 5%;
+    --foreground: 40 18% 92%;
+    --card: 240 8% 8%;
+    --card-foreground: 40 18% 92%;
+    --popover: 240 9% 9%;
+    --popover-foreground: 40 18% 92%;
+    --primary: 40 18% 93%;
+    --primary-foreground: 240 12% 8%;
+    --secondary: 240 6% 13%;
+    --secondary-foreground: 40 18% 92%;
+    --muted: 240 6% 13%;
+    --muted-foreground: 245 8% 62%;
+    --accent: 245 10% 19%;
+    --accent-foreground: 40 18% 96%;
+    --destructive: 2 78% 64%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 55% 55%;
-    --success-foreground: 220 20% 8%;
-    --warning: 41 85% 60%;
-    --warning-foreground: 220 20% 8%;
-    --border: 220 12% 21%;
-    --input: 220 12% 26%;
-    --brand: 222 100% 72%;
-    --brand-foreground: 220 20% 8%;
-    --ring: 222 100% 72%;
+    --success: 150 52% 56%;
+    --success-foreground: 240 12% 8%;
+    --warning: 36 94% 60%;
+    --warning-foreground: 240 12% 8%;
+    --border: 245 8% 16%;
+    --input: 245 8% 22%;
+    --brand: 258 90% 76%;
+    --brand-foreground: 240 14% 9%;
+    --ring: 258 90% 76%;
+
+    /* constellation accents (used by the interactive graphic) */
+    --c-violet: 258 92% 76%;
+    --c-amber: 35 96% 62%;
+    --c-star: 40 30% 96%;
   }
 }
 
@@ -72,69 +88,192 @@
   }
   body {
     @apply font-sans text-foreground;
-    background-color: #e9ebf1;
+    background-color: #f1eee8;
     background-image:
-      radial-gradient(60% 50% at 10% -8%, hsl(224 60% 72% / 0.30), transparent 70%),
-      radial-gradient(50% 45% at 100% 108%, hsl(220 30% 62% / 0.26), transparent 70%);
+      radial-gradient(62% 52% at 8% -8%, hsl(258 70% 66% / 0.22), transparent 70%),
+      radial-gradient(54% 46% at 102% 108%, hsl(32 80% 60% / 0.16), transparent 70%);
     background-attachment: fixed;
     font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
   .dark body {
-    background-color: #06070b;
+    background-color: #020304;
     background-image:
-      radial-gradient(58% 48% at 8% -10%, hsl(224 70% 30% / 0.40), transparent 72%),
-      radial-gradient(50% 46% at 104% 108%, hsl(220 40% 22% / 0.38), transparent 72%),
-      radial-gradient(40% 36% at 92% 2%, hsl(222 30% 30% / 0.22), transparent 70%);
+      radial-gradient(55% 44% at 74% 42%, hsl(190 78% 30% / 0.14), transparent 66%),
+      radial-gradient(48% 40% at 32% 22%, hsl(225 72% 30% / 0.12), transparent 72%),
+      linear-gradient(180deg, #020304 0%, #030406 100%);
   }
+
+  /* Editorial serif headlines (ausdata.ai display style) */
   h1,
   h2,
   h3 {
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
   }
+  .font-display {
+    font-family: theme("fontFamily.serif");
+    letter-spacing: -0.015em;
+    font-weight: 500;
+  }
+
   ::-webkit-scrollbar {
     width: 11px;
     height: 11px;
   }
   ::-webkit-scrollbar-thumb {
     @apply rounded-full;
-    background: hsl(220 10% 100% / 0.14);
+    background: hsl(40 10% 100% / 0.12);
     border: 3px solid transparent;
     background-clip: padding-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(220 10% 100% / 0.26);
+    background: hsl(40 10% 100% / 0.24);
     background-clip: padding-box;
   }
 }
 
 @layer components {
-  /* Floating app panel — near-solid so content stays readable, with a hint
-     of translucency + blur at the edges for the premium floating feel. */
+  /* Floating app panel */
   .app-shell {
-    background: hsl(0 0% 100% / 0.86);
-    border: 1px solid hsl(220 20% 70% / 0.5);
+    background: hsl(40 24% 99% / 0.84);
+    border: 1px solid hsl(245 18% 72% / 0.5);
     backdrop-filter: blur(20px) saturate(125%);
     -webkit-backdrop-filter: blur(20px) saturate(125%);
     box-shadow:
-      0 30px 70px -28px hsl(220 40% 30% / 0.45),
+      0 30px 70px -28px hsl(245 40% 30% / 0.4),
       inset 0 1px 0 0 hsl(0 0% 100% / 0.7);
   }
   .dark .app-shell {
-    background: hsl(222 18% 7% / 0.92);
-    border-color: hsl(0 0% 100% / 0.1);
+    background: hsl(240 9% 6% / 0.9);
+    border-color: hsl(40 20% 100% / 0.08);
     box-shadow:
-      0 44px 90px -30px hsl(0 0% 0% / 0.75),
-      inset 0 1px 0 0 hsl(0 0% 100% / 0.06);
+      0 44px 90px -30px hsl(0 0% 0% / 0.8),
+      inset 0 1px 0 0 hsl(40 20% 100% / 0.05);
   }
-  /* Solid, clearly-elevated content surface (cards, section header). */
+
+  /* Solid content surface (cards, section header) */
   .surface {
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
   }
   .dark .surface {
-    box-shadow: inset 0 1px 0 0 hsl(0 0% 100% / 0.04);
+    box-shadow: inset 0 1px 0 0 hsl(40 20% 100% / 0.035);
+  }
+
+  /* Small caps eyebrow label used throughout the editorial layout */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Faint blueprint grid backdrop for the interactive section */
+  .grid-field {
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.7) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.7) 1px, transparent 1px);
+    background-size: 34px 34px;
+    -webkit-mask-image: radial-gradient(75% 75% at 50% 45%, #000 30%, transparent 100%);
+    mask-image: radial-gradient(75% 75% at 50% 45%, #000 30%, transparent 100%);
+  }
+
+  /* Hairline-divided product grid (ausdata product suite cards) */
+  .hairline-grid {
+    background: hsl(var(--border));
+    gap: 1px;
+  }
+  .hairline-grid > * {
+    background: hsl(var(--background));
+  }
+
+  /* ausdata.ai buttons — outlined, uppercase, letter-spaced */
+  .btn-aus {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) - 2px);
+    padding: 0.72rem 1.4rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: hsl(var(--foreground));
+    background: hsl(var(--card) / 0.4);
+    transition: all 0.18s ease;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .btn-aus:hover {
+    border-color: hsl(var(--foreground) / 0.4);
+    background: hsl(var(--accent) / 0.7);
+    transform: translateY(-1px);
+  }
+  .btn-aus-solid {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-color: transparent;
+  }
+  .btn-aus-solid:hover {
+    background: hsl(var(--primary) / 0.9);
+  }
+  .btn-aus-sm {
+    padding: 0.5rem 1rem;
+    font-size: 10px;
+  }
+  .hero-cta {
+    min-height: 64px;
+    min-width: 166px;
+    justify-content: center;
+    border-color: hsl(230 28% 48% / 0.42);
+    border-radius: 0;
+    background: hsl(240 20% 7% / 0.66);
+    color: hsl(40 24% 94%);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.04),
+      0 10px 28px hsl(235 75% 42% / 0.08);
+    font-family: theme("fontFamily.serif");
+    font-size: 13px;
+    letter-spacing: 0.18em;
+  }
+  .hero-cta:hover {
+    border-color: hsl(237 90% 68% / 0.7);
+    background: hsl(240 22% 10% / 0.84);
+  }
+  .hero-reference span[class="text-muted-foreground/30"] {
+    display: none;
+  }
+  .home-contact-fix {
+    font-size: 0 !important;
+  }
+  .home-contact-fix .contact-copy {
+    font-size: 13px !important;
+    word-spacing: 0.32em;
+    white-space: pre;
+  }
+  .hero-phi {
+    font-size: 0 !important;
+  }
+  .hero-phi::after {
+    content: "φ";
+    font-size: 2.6rem !important;
+  }
+
+  /* Nav links — uppercase, letter-spaced */
+  .nav-link {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+    transition: color 0.18s ease;
+    cursor: pointer;
+  }
+  .nav-link:hover {
+    color: hsl(var(--foreground));
   }
 }
 

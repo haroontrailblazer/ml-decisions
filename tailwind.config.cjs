@@ -21,6 +21,15 @@ module.exports = {
           "Arial",
           "sans-serif",
         ],
+        /* Editorial display serif (ausdata.ai-style headlines) */
+        serif: [
+          "Newsreader",
+          "ui-serif",
+          "Georgia",
+          "Cambria",
+          "Times New Roman",
+          "serif",
+        ],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -87,11 +96,31 @@ module.exports = {
           from: { opacity: "0", transform: "translateY(6px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        "rise-in": {
+          from: { opacity: "0", transform: "translateY(14px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        twinkle: {
+          "0%, 100%": { opacity: "0.25" },
+          "50%": { opacity: "1" },
+        },
+        "scroll-cue": {
+          "0%, 100%": { opacity: "0.2", transform: "translateY(0)" },
+          "50%": { opacity: "1", transform: "translateY(5px)" },
+        },
+        "aurora-drift": {
+          "0%, 100%": { transform: "translate3d(0,0,0) scale(1)" },
+          "50%": { transform: "translate3d(2%, -2%, 0) scale(1.06)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.35s ease-out",
+        "rise-in": "rise-in 0.6s cubic-bezier(0.22,1,0.36,1) both",
+        twinkle: "twinkle 3.5s ease-in-out infinite",
+        "scroll-cue": "scroll-cue 1.8s ease-in-out infinite",
+        "aurora-drift": "aurora-drift 18s ease-in-out infinite",
       },
     },
   },

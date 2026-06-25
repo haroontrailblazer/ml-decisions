@@ -31,14 +31,14 @@ function SectionHeader({
             className="h-7 w-7 text-brand"
           />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand">
-              Step {index + 1} of {total}
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand">
+              Step {String(index + 1).padStart(2, "0")} / {total}
             </span>
             {sec.gate && <Badge variant="warning">Say-No Gate</Badge>}
           </div>
-          <h1 className="text-[26px] font-semibold leading-tight tracking-tight">
+          <h1 className="font-display text-[clamp(1.6rem,3vw,2rem)] font-medium leading-tight">
             {sec.title}
           </h1>
         </div>

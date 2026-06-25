@@ -78,16 +78,21 @@ export function SummaryPanel() {
         <div className="flex flex-wrap items-center gap-5">
           <Icon weight="fill" className={cn("h-12 w-12", WORD[tone])} />
           <div>
-            <div className={cn("text-3xl font-black tracking-tight", WORD[tone])}>
+            <div
+              className={cn(
+                "font-display text-[2.4rem] font-medium leading-none tracking-tight",
+                WORD[tone],
+              )}
+            >
               {sc.verdict}
             </div>
-            <p className="mt-0.5 text-sm text-muted-foreground">
+            <p className="mt-1.5 text-sm text-muted-foreground">
               {String(answers.proj_title || "(untitled request)")}
               {answers.req_company ? ` · ${String(answers.req_company)}` : ""}
             </p>
           </div>
           <div className="ml-auto text-right">
-            <div className="text-4xl font-black leading-none">
+            <div className="font-display text-[2.75rem] font-medium leading-none">
               {sc.readiness}%
             </div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
