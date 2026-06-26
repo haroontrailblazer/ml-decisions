@@ -119,7 +119,7 @@ export function Landing() {
         </div>
 
         <div className="mx-auto flex max-w-[620px] flex-col items-start text-left">
-          <h1 className="font-display text-[clamp(2.7rem,12vw,3.35rem)] font-medium italic leading-[0.86] tracking-normal text-white sm:text-[clamp(3.2rem,14vw,4.25rem)] lg:text-[clamp(4.2rem,7.4vw,6.25rem)]">
+          <h1 className="font-display whitespace-nowrap text-[clamp(2.7rem,12vw,3.35rem)] font-medium italic leading-[0.86] tracking-normal text-white sm:text-[clamp(3.2rem,14vw,4.25rem)] lg:text-[clamp(3.7rem,6vw,5.5rem)]">
             ML Decisions.
             <br />
             <span className="not-italic text-white/[0.28]">Structured.</span>
