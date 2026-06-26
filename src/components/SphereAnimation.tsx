@@ -203,6 +203,10 @@ export function SphereAnimation({ className }: { className?: string }) {
 
     // Render loop
     let lastHoveredIdx: number | null = null;
+    // A "pinned" node is the one being hovered: it freezes on screen (stops
+    // orbiting) and anchors the toast until the cursor leaves it.
+    let pinnedIdx: number | null = null;
+    let pinnedPos: Point2D | null = null;
 
     const draw = (time: number) => {
       ctx.clearRect(0, 0, w, h);
@@ -231,6 +235,15 @@ export function SphereAnimation({ className }: { className?: string }) {
       const projectedNodes = NODES_DATA.map((node, idx) => {
         const pNode = physicsNodesRef.current[idx];
 
+        // A pinned (hovered) node freezes in place — no orbit, no drift.
+        if (idx === pinnedIdx) {
+          pNode.vx = 0;
+          pNode.vy = 0;
+          pNode.vz = 0;
+          const proj = project({ x: pNode.x, y: pNode.y, z: pNode.z }, rx, ry);
+          return { ...node, proj, pt3d: { x: pNode.x, y: pNode.y, z: pNode.z } };
+        }
+
         // Target orbital position (nodes share speed & spacing to prevent collision)
         const orbitAngle = time * 0.00025 + idx * (Math.PI / 2);
         const targetRadius = 145;
@@ -250,7 +263,7 @@ export function SphereAnimation({ className }: { className?: string }) {
         let worldFz = 0;
 
         const currentProj = project({ x: pNode.x, y: pNode.y, z: pNode.z }, rx, ry);
-        if (pointer.active && currentProj) {
+        if (pointer.active && currentProj && pinnedIdx === null) {
           const dx = pointer.x - currentProj.x;
           const dy = pointer.y - currentProj.y;
           const dist2D = Math.hypot(dx, dy);
@@ -378,23 +391,40 @@ export function SphereAnimation({ className }: { className?: string }) {
         ctx.fill();
       }
 
-      // 4. Hover detection (done early so we know what is hovered when drawing edges)
-      let hoveredIdx: number | null = null;
-      if (pointer.active) {
+      // 4. Pin / unpin the hovered node. A pinned node stops moving (drawn at its
+      //    frozen screen position) and stays pinned until the cursor leaves it.
+      if (pinnedIdx !== null) {
+        const stillNear =
+          pointer.active &&
+          pinnedPos !== null &&
+          Math.hypot(pointer.x - pinnedPos.x, pointer.y - pinnedPos.y) < 30;
+        if (!stillNear) {
+          pinnedIdx = null;
+          pinnedPos = null;
+        }
+      }
+      if (pinnedIdx === null && pointer.active) {
         for (let i = 0; i < projectedNodes.length; i++) {
           const node = projectedNodes[i];
           if (!node.proj) continue;
           const dist = Math.hypot(pointer.x - node.proj.x, pointer.y - node.proj.y);
           if (dist < 18) {
-            hoveredIdx = i;
+            pinnedIdx = i;
+            pinnedPos = { x: node.proj.x, y: node.proj.y };
             break;
           }
         }
       }
+      const hoveredIdx: number | null = pinnedIdx;
+
+      // Screen position to draw a node at — the pinned one is frozen in place.
+      const drawPos = (idx: number, proj: Point2D | null | undefined): Point2D | null =>
+        idx === pinnedIdx && pinnedPos ? pinnedPos : proj ?? null;
 
       // 3. Draw connection lines (edges) from center logo to nodes (with vibrant custom colors)
       projectedNodes.forEach((node, idx) => {
-        if (!node.proj) return;
+        const dp = drawPos(idx, node.proj);
+        if (!dp) return;
         const centerProj = project({ x: 0, y: 0, z: 0 }, rx, ry);
         if (centerProj) {
           const isHovered = hoveredIdx === idx;
@@ -402,7 +432,7 @@ export function SphereAnimation({ className }: { className?: string }) {
           ctx.lineWidth = isHovered ? 1.0 : 0.75;
           ctx.beginPath();
           ctx.moveTo(centerProj.x, centerProj.y);
-          ctx.lineTo(node.proj.x, node.proj.y);
+          ctx.lineTo(dp.x, dp.y);
           ctx.stroke();
         }
       });
@@ -426,11 +456,12 @@ export function SphereAnimation({ className }: { className?: string }) {
 
       // 5. Draw Orbiting Nodes last (on top of front shell, with larger shapes and glows)
       projectedNodes.forEach((node, idx) => {
-        if (!node.proj) return;
+        const dp = drawPos(idx, node.proj);
+        if (!dp) return;
 
         const isHovered = hoveredIdx === idx;
-        const px = node.proj.x;
-        const py = node.proj.y;
+        const px = dp.x;
+        const py = dp.y;
 
         // Draw connecting beams of light if hovered
         if (isHovered) {
@@ -470,25 +501,22 @@ export function SphereAnimation({ className }: { className?: string }) {
       });
 
 
-      // Update tooltip position if node is hovered
-      if (hoveredIdx !== null && tooltipRef.current) {
-        const hoveredNode = projectedNodes[hoveredIdx];
-        if (hoveredNode.proj) {
-          const tooltip = tooltipRef.current;
-          const tooltipWidth = tooltip.offsetWidth || 250;
-          const tooltipHeight = tooltip.offsetHeight || 90;
-          
-          let tx = hoveredNode.proj.x - tooltipWidth / 2;
-          let ty = hoveredNode.proj.y - tooltipHeight - 16;
+      // Anchor the toast to the pinned (frozen) node position
+      if (hoveredIdx !== null && pinnedPos && tooltipRef.current) {
+        const tooltip = tooltipRef.current;
+        const tooltipWidth = tooltip.offsetWidth || 250;
+        const tooltipHeight = tooltip.offsetHeight || 90;
 
-          // Constraints to keep tooltip within canvas container
-          if (tx < 10) tx = 10;
-          if (tx + tooltipWidth > w - 10) tx = w - tooltipWidth - 10;
-          if (ty < 10) ty = hoveredNode.proj.y + 16;
+        let tx = pinnedPos.x - tooltipWidth / 2;
+        let ty = pinnedPos.y - tooltipHeight - 16;
 
-          tooltip.style.left = `${tx}px`;
-          tooltip.style.top = `${ty}px`;
-        }
+        // Constraints to keep tooltip within canvas container
+        if (tx < 10) tx = 10;
+        if (tx + tooltipWidth > w - 10) tx = w - tooltipWidth - 10;
+        if (ty < 10) ty = pinnedPos.y + 16;
+
+        tooltip.style.left = `${tx}px`;
+        tooltip.style.top = `${ty}px`;
       }
 
       raf = requestAnimationFrame(draw);
@@ -519,6 +547,8 @@ export function SphereAnimation({ className }: { className?: string }) {
       targetTiltY = 0;
       setHoveredNodeIdx(null);
       lastHoveredIdx = null;
+      pinnedIdx = null;
+      pinnedPos = null;
     };
 
     const onClick = () => {

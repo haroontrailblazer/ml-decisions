@@ -108,14 +108,13 @@ export function Landing() {
         />
         
         {/* Vertical dividing line separator in the center of the columns */}
-        <div className="pointer-events-none absolute bottom-10 left-1/2 top-[172px] hidden w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-white/16 to-white/10 lg:block" />
+        <div className="pointer-events-none absolute bottom-[62px] left-1/2 top-[172px] hidden w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-white/16 to-white/10 lg:block" />
 
-        {/* Scroll indicator at the bottom-center of the separator */}
-        <div className="pointer-events-none absolute bottom-[42px] left-1/2 hidden -translate-x-1/2 select-none flex-col items-center gap-3 lg:flex">
+        {/* Scroll text below the bottom of the center line */}
+        <div className="pointer-events-none absolute bottom-[28px] left-1/2 hidden -translate-x-1/2 select-none lg:block">
           <span className="font-display text-[11px] uppercase tracking-[0.34em] text-white/64">
             Scroll
           </span>
-          <span className="h-14 w-px bg-white/10" />
         </div>
 
         <div className="mx-auto flex max-w-[620px] flex-col items-start text-left">
