@@ -86,11 +86,23 @@ type Mote = {
   x: number;
   lane: number; // -0.5..0.5 vertical position within band thickness
   fate: number; // gate index it dies at (0..2) or 3 = survives to verdict
-  state: "ride" | "fall";
+  state: "ride" | "fade"; // fade = dissolving into the rejection pour at its gate
+  vx: number;
+  alpha: number;
+  y_?: number; // frozen y while fading
+  fadeAge?: number;
+};
+
+// a droplet in the animated rejection "pour" that drains off a gate
+type Drop = {
+  k: number; // gate index (0 = Say-No, 1 = Lenses, 2 = Data)
+  x: number;
+  y: number;
   vx: number;
   vy: number;
-  alpha: number;
-  y_?: number; // live y while falling out of the band
+  age: number;
+  life: number;
+  size: number;
 };
 
 type Layout = {
@@ -107,7 +119,6 @@ type Layout = {
   bandPath: Path2D;
   bandGrad: CanvasGradient;
   lipGrad: CanvasGradient;
-  rejects: { path: Path2D; grad: CanvasGradient }[];
 };
 
 const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
@@ -115,6 +126,19 @@ const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 const smoothstep = (a: number, b: number, x: number) => {
   const t = clamp((x - a) / (b - a), 0, 1);
   return t * t * (3 - 2 * t);
+};
+
+// units shed at each gate (drives pour density & mouth width): [64, 15, 9]
+const SHED = [
+  COUNTS[0] - COUNTS[1],
+  COUNTS[1] - COUNTS[2],
+  COUNTS[2] - COUNTS[3],
+];
+const parseHSL = (t: string) => t.replace(/%/g, "").split(/\s+/).map(Number);
+const lerpHSL = (a: string, b: string, t: number) => {
+  const [h1, s1, l1] = parseHSL(a);
+  const [h2, s2, l2] = parseHSL(b);
+  return `${mix(h1, h2, t).toFixed(1)} ${mix(s1, s2, t).toFixed(1)}% ${mix(l1, l2, t).toFixed(1)}%`;
 };
 
 export function AttritionLedger({
@@ -178,8 +202,10 @@ export function AttritionLedger({
 
     let L: Layout | null = null;
     const motes: Mote[] = [];
+    const drops: Drop[] = [];
     const blooms: { age: number; x: number; y: number }[] = [];
     let displayPct = reduced ? 7 : 0;
+    const GRAVITY = 150;
 
     // native canvas letter-spacing (reset to 0 around serif/non-tracked text)
     const setLS = (px: number) => {
@@ -239,7 +265,6 @@ export function AttritionLedger({
         bandPath: new Path2D(),
         bandGrad: ctx.createLinearGradient(0, 0, 0, 0),
         lipGrad: ctx.createLinearGradient(0, 0, 0, 0),
-        rejects: [],
       };
 
       // survivor band: flat top + stepped bottom
@@ -271,53 +296,12 @@ export function AttritionLedger({
       lipGrad.addColorStop(1, hsla(col.success, 0.7));
       l.lipGrad = lipGrad;
 
-      // reject cascades at gates 0,1,2
-      for (let k = 0; k < 3; k++) {
-        const gx = gateX[k];
-        const preC = COUNTS[k];
-        const postC = COUNTS[k + 1];
-        const shed = preC - postC;
-        const topY = yTop + postC * unit;
-        const botY = yTop + preC * unit;
-        const fallDX = clamp(shed * unit * 0.95, 30, 0.14 * w);
-        const endX = gx + fallDX;
-        const p = new Path2D();
-        p.moveTo(gx - 14, topY);
-        p.bezierCurveTo(
-          gx + fallDX * 0.35,
-          topY + (yFloor - topY) * 0.22,
-          endX - 4,
-          yFloor - 14,
-          endX,
-          yFloor - 8,
-        );
-        p.lineTo(endX + 3, yFloor);
-        p.bezierCurveTo(
-          gx + fallDX * 0.45,
-          yFloor,
-          gx - 2,
-          botY + 8,
-          gx - 14,
-          botY,
-        );
-        p.closePath();
-
-        const grad = ctx.createLinearGradient(0, topY, 0, yFloor);
-        if (k === 0) {
-          grad.addColorStop(0, hsla(col.amber, 0.5));
-          grad.addColorStop(0.4, hsla(col.destructive, 0.32));
-          grad.addColorStop(1, hsla(col.destructive, 0));
-        } else {
-          const c = gateColor(k);
-          grad.addColorStop(0, hsla(c, 0.42));
-          grad.addColorStop(0.45, hsla(c, 0.22));
-          grad.addColorStop(1, hsla(c, 0));
-        }
-        l.rejects.push({ path: p, grad });
-      }
-
       return l;
     };
+
+    // y of the band's bottom edge at a given x — the pour spills from this line
+    const bandBottomAt = (x: number, l: Layout) =>
+      l.yTop + countAt(x, l) * l.unit;
 
     const spawnMote = (m: Mote, l: Layout, atStart: boolean) => {
       m.x = atStart
@@ -329,8 +313,9 @@ export function AttritionLedger({
       m.lane = (Math.random() - 0.5) * 0.92;
       m.state = "ride";
       m.vx = 64 + Math.random() * 18;
-      m.vy = 0;
       m.alpha = 1;
+      m.fadeAge = 0;
+      m.y_ = undefined;
     };
 
     const seedMotes = (l: Layout) => {
@@ -343,11 +328,114 @@ export function AttritionLedger({
           fate: 3,
           state: "ride",
           vx: 70,
-          vy: 0,
           alpha: 1,
         };
         spawnMote(m, l, false);
         motes.push(m);
+      }
+    };
+
+    /* ---- animated rejection pour (the funnel draining off each gate) ---- */
+    const mouthW = (k: number, l: Layout) =>
+      clamp(SHED[k] * l.unit * 0.5, 14, 80);
+
+    const spawnDrop = (d: Drop, l: Layout) => {
+      const gx = l.gateX[d.k];
+      const w = mouthW(d.k, l);
+      d.x = gx + (Math.random() - 0.5) * w;
+      d.y = bandBottomAt(d.x, l) + 1;
+      d.vx = (Math.random() - 0.5) * 16 + 5; // gentle rightward fan
+      d.vy = 6 + Math.random() * 14;
+      d.age = 0;
+      d.life = 0.9 + Math.random() * 0.85;
+      d.size = 1 + Math.random() * 1.25;
+    };
+
+    const seedDrops = (l: Layout) => {
+      drops.length = 0;
+      const factor = 0.42 * (0.62 + 0.38 * l.expandT);
+      for (let k = 0; k < 3; k++) {
+        const n = Math.max(3, Math.round(SHED[k] * factor));
+        for (let i = 0; i < n; i++) {
+          const d: Drop = {
+            k,
+            x: 0,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            age: 0,
+            life: 1,
+            size: 1,
+          };
+          spawnDrop(d, l);
+          // spread along the fall so the pour is full from frame one
+          const p0 = Math.random();
+          d.age = p0 * d.life;
+          d.x += d.vx * d.age;
+          d.vy += GRAVITY * d.age;
+          d.y += (d.vy * d.age) / 2;
+          drops.push(d);
+        }
+      }
+    };
+
+    const dropColor = (d: Drop, p: number) =>
+      d.k === 0
+        ? lerpHSL(col.amber, col.destructive, Math.min(1, p * 1.25))
+        : gateColor(d.k);
+
+    const drawPour = (l: Layout, dt: number) => {
+      // soft spray cones behind the droplets give the pour body
+      for (let k = 0; k < 3; k++) {
+        const gx = l.gateX[k];
+        const topY = l.yTop + COUNTS[k + 1] * l.unit;
+        const w = mouthW(k, l);
+        const drift = 12;
+        const c = k === 0 ? col.amber : gateColor(k);
+        const g = ctx.createLinearGradient(0, topY, 0, l.yFloor);
+        g.addColorStop(0, hsla(c, 0.13));
+        if (k === 0) g.addColorStop(0.55, hsla(col.destructive, 0.07));
+        g.addColorStop(1, hsla(c, 0));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(gx - w * 0.42, topY);
+        ctx.lineTo(gx + w * 0.42, topY);
+        ctx.lineTo(gx + w * 1.15 + drift, l.yFloor);
+        ctx.lineTo(gx - w * 1.15 + drift, l.yFloor);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // droplets
+      for (const d of drops) {
+        if (dt > 0) {
+          d.age += dt;
+          d.vy += GRAVITY * dt;
+          d.x += d.vx * dt;
+          d.y += d.vy * dt;
+          if (d.age >= d.life || d.y >= l.yFloor) {
+            spawnDrop(d, l);
+            continue;
+          }
+        }
+        const p = d.age / d.life;
+        const a = (p < 0.12 ? p / 0.12 : 1 - (p - 0.12) / 0.88) * 0.85;
+        const triple = dropColor(d, p);
+        // halo
+        ctx.fillStyle = hsla(triple, a * 0.22);
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.size * 2.4, 0, Math.PI * 2);
+        ctx.fill();
+        // short trail
+        ctx.fillStyle = hsla(triple, a * 0.4);
+        ctx.beginPath();
+        ctx.arc(d.x - d.vx * 0.03, d.y - d.vy * 0.03, d.size * 0.75, 0, Math.PI * 2);
+        ctx.fill();
+        // head
+        ctx.fillStyle = hsla(triple, a);
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+        ctx.fill();
       }
     };
 
@@ -371,13 +459,6 @@ export function AttritionLedger({
       ctx.moveTo(l.intakeX + 16, l.yTop);
       ctx.lineTo(l.termX, l.yTop);
       ctx.stroke();
-    };
-
-    const drawRejects = (l: Layout) => {
-      for (const r of l.rejects) {
-        ctx.fillStyle = r.grad;
-        ctx.fill(r.path);
-      }
     };
 
     const drawStriations = (l: Layout, now: number) => {
@@ -411,12 +492,11 @@ export function AttritionLedger({
           m.x += speed * dt;
           const cnt = countAt(m.x, l);
           const y = l.yTop + cnt * l.unit * (0.5 + m.lane * 0.42);
-          // reached its reject gate?
+          // reached its reject gate → dissolve into the pour at that gate
           if (m.fate < 3 && m.x >= l.gateX[m.fate]) {
-            m.state = "fall";
-            m.vy = 26 + Math.random() * 26;
-            m.vx = 18 + Math.random() * 22;
-            m.alpha = 1;
+            m.state = "fade";
+            m.fadeAge = 0;
+            m.y_ = y;
           } else if (m.fate === 3 && m.x >= l.termX) {
             blooms.push({
               age: 0,
@@ -425,37 +505,33 @@ export function AttritionLedger({
             });
             spawnMote(m, l, true);
             continue;
+          } else {
+            const head = hsla(col.star, 0.85);
+            ctx.fillStyle = hsla(col.star, 0.28);
+            ctx.fillRect(m.x - 6, y - 0.8, 4, 1.6);
+            ctx.fillStyle = head;
+            ctx.beginPath();
+            ctx.arc(m.x, y, 1.7, 0, Math.PI * 2);
+            ctx.fill();
           }
-          const head = hsla(col.star, 0.85 * m.alpha);
-          const tail = hsla(col.star, 0.28 * m.alpha);
-          ctx.fillStyle = tail;
-          ctx.fillRect(m.x - 6, y - 0.8, 4, 1.6);
-          ctx.fillStyle = head;
+        }
+        if (m.state === "fade") {
+          // a quick gate flash as the request is handed to the rejection pour
+          m.fadeAge = (m.fadeAge ?? 0) + dt;
+          const fa = clamp(1 - m.fadeAge / 0.28, 0, 1);
+          if (m.fadeAge >= 0.28) {
+            spawnMote(m, l, true);
+            continue;
+          }
+          const c = gateColor(m.fate);
+          const yy = (m.y_ ?? l.yTop) + m.fadeAge * 26;
+          ctx.fillStyle = hsla(c, fa * 0.9);
           ctx.beginPath();
-          ctx.arc(m.x, y, 1.7, 0, Math.PI * 2);
+          ctx.arc(m.x, yy, 1.7 + (1 - fa) * 1.5, 0, Math.PI * 2);
           ctx.fill();
         }
       }
       ctx.restore();
-
-      // falling motes drawn outside the band clip (they leave the band)
-      for (const m of motes) {
-        if (m.state !== "fall") continue;
-        m.vy += 80 * dt;
-        m.x += m.vx * dt;
-        m.y_ = (m.y_ ?? l.yTop + countAt(m.x, l) * l.unit) + m.vy * dt;
-        m.alpha -= dt / 0.9;
-        if (m.alpha <= 0 || m.y_ > l.yFloor) {
-          m.y_ = undefined;
-          spawnMote(m, l, true);
-          continue;
-        }
-        const c = gateColor(m.fate);
-        ctx.fillStyle = hsla(c, clamp(m.alpha, 0, 1) * 0.85);
-        ctx.beginPath();
-        ctx.arc(m.x, m.y_, 1.7, 0, Math.PI * 2);
-        ctx.fill();
-      }
     };
 
     const drawGates = (l: Layout, now: number, hoverIdx: number) => {
@@ -618,9 +694,9 @@ export function AttritionLedger({
 
       const hoverIdx = hoverRef.current;
 
-      drawRejects(l);
       drawBand(l);
       if (!reduced) drawStriations(l, now);
+      drawPour(l, dt);
       drawMotes(l, dt, hoverIdx);
       drawGates(l, now, hoverIdx);
       drawBlooms(l, dt);
@@ -655,11 +731,12 @@ export function AttritionLedger({
         x: l.termX,
         y: l.yTop + COUNTS[3] * l.unit * 0.5,
       });
+      seedDrops(l);
       ctx.clearRect(0, 0, l.w, l.h);
-      drawRejects(l);
       drawBand(l);
       // striations at fixed phases
       for (const ph of [0.3, 0.6, 0.9]) drawStriations(l, ph * 8000);
+      drawPour(l, 0);
       drawMotes(l, 0, -1);
       drawGates(l, 0, -1);
       drawBlooms(l, 0);
@@ -677,6 +754,7 @@ export function AttritionLedger({
       const hadMotes = motes.length > 0;
       L = build();
       if (!hadMotes) seedMotes(L);
+      seedDrops(L);
       if (reduced) drawStatic();
     };
 
