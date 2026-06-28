@@ -4,7 +4,7 @@ import { useStore } from "@/store";
 import { SECTIONS } from "@/data/sections";
 import { SectionGlyph } from "@/data/icons";
 import { cn } from "@/lib/utils";
-import { Constellation } from "./Constellation";
+import { AttritionLedger } from "./AttritionLedger";
 import { SphereAnimation } from "./SphereAnimation";
 
 /* ---------------- data: framework mapped to ausdata's product cards ---------------- */
@@ -70,12 +70,12 @@ function ExpandPanel() {
         )}
       >
         <div className="grid-field absolute inset-0" />
-        <Constellation className="absolute inset-0" count={expanded ? 40 : 26} />
+        <AttritionLedger className="absolute inset-0" expanded={expanded} />
 
         {/* + EXPAND toggle, centered at top like the reference */}
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="absolute left-1/2 top-4 inline-flex -translate-x-1/2 items-center gap-2 rounded-full border border-border bg-background/70 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground backdrop-blur transition-colors hover:border-foreground/30 hover:text-foreground"
+          className="absolute right-4 top-4 z-20 inline-flex items-center gap-2 rounded-full border border-border bg-background/70 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground backdrop-blur transition-colors hover:border-foreground/30 hover:text-foreground"
         >
           {expanded ? (
             <CornersOut weight="bold" className="h-3 w-3" />
@@ -86,7 +86,7 @@ function ExpandPanel() {
         </button>
 
         <span className="absolute bottom-4 left-1/2 -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70">
-          decision space · live
+          attrition funnel · live
         </span>
       </div>
     </div>
